@@ -83,6 +83,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final compactHeight = screenHeight < 760;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F4),
@@ -106,7 +108,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
-                      const SizedBox(height: 66),
+                      SizedBox(height: compactHeight ? 26 : 56),
                       const Text(
                         '6- digit code',
                         style: TextStyle(
@@ -126,32 +128,48 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           height: 1.35,
                         ),
                       ),
-                      const SizedBox(height: 46),
-                      Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (int i = 0; i < _otpLength; i++) ...[
-                              _OtpCell(value: _digits[i]),
-                              if (i == 2)
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 12),
-                                  child: Text(
-                                    '-',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFFD0D1D4),
-                                    ),
+                      SizedBox(height: compactHeight ? 24 : 38),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          const gap = 8.0;
+                          const dashGap = 12.0;
+                          const dashWidth = 12.0;
+                          const totalGaps = (4 * gap) + (2 * dashGap) + dashWidth;
+                          final availableForCells = constraints.maxWidth - totalGaps;
+                          final cellWidth = (availableForCells / _otpLength).clamp(40.0, 52.0);
+                          final cellHeight = (cellWidth * 1.42).clamp(56.0, 74.0);
+
+                          return Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                for (int i = 0; i < _otpLength; i++) ...[
+                                  _OtpCell(
+                                    value: _digits[i],
+                                    width: cellWidth,
+                                    height: cellHeight,
                                   ),
-                                )
-                              else if (i < _otpLength - 1)
-                                const SizedBox(width: 8),
-                            ],
-                          ],
-                        ),
+                                  if (i == 2)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: dashGap),
+                                      child: Text(
+                                        '-',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFFD0D1D4),
+                                        ),
+                                      ),
+                                    )
+                                  else if (i < _otpLength - 1)
+                                    const SizedBox(width: gap),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 50),
+                      SizedBox(height: compactHeight ? 28 : 42),
                       Row(
                         children: [
                           const Text(
@@ -197,7 +215,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 126),
+                      SizedBox(height: compactHeight ? 36 : 84),
                       SizedBox(
                         width: double.infinity,
                         height: 72,
@@ -249,15 +267,21 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 }
 
 class _OtpCell extends StatelessWidget {
-  const _OtpCell({required this.value});
+  const _OtpCell({
+    required this.value,
+    required this.width,
+    required this.height,
+  });
 
   final String value;
+  final double width;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 74,
+      width: width,
+      height: height,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),

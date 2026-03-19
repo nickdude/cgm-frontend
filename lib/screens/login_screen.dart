@@ -62,14 +62,18 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final heroHeight = (screenHeight * 0.34).clamp(200.0, 280.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
       body: SafeArea(
-        child: Column(
-          children: [
-            SizedBox(
-              height: 280,
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Column(
+            children: [
+              SizedBox(
+                height: heroHeight,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -108,11 +112,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                child: Column(
-                  children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    children: [
                     const Text(
                       'Take control\nof your health',
                       textAlign: TextAlign.center,
@@ -137,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       children: [
                         Container(
-                          width: 84,
+                          width: 96,
                           height: 56,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
@@ -145,20 +150,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: AppColors.surface,
                           ),
                           alignment: Alignment.center,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('🇮🇳', style: TextStyle(fontSize: 16)),
-                              SizedBox(width: 6),
-                              Text(
-                                '+91',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF1F2933),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text('🇮🇳', style: TextStyle(fontSize: 16)),
+                                SizedBox(width: 6),
+                                Text(
+                                  '+91',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF1F2933),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -348,11 +356,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

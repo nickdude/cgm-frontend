@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class OnboardingQuestionsScreen extends StatefulWidget {
   const OnboardingQuestionsScreen({super.key});
@@ -204,6 +205,7 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Onboarding (part 1) saved.')),
     );
+    context.push('/device/setup');
   }
 
   @override
@@ -218,28 +220,31 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF3F3F4),
         body: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 18),
-              _OnboardingProgressHeader(
-                progress: ((_step + 1) / _totalQuestions).clamp(0.0, 1.0),
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: _buildStepBody(),
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Column(
+              children: [
+                const SizedBox(height: 18),
+                _OnboardingProgressHeader(
+                  progress: ((_step + 1) / _totalQuestions).clamp(0.0, 1.0),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 8, 28, 26),
-                child: _PrimaryActionButton(
-                  label: _primaryButtonLabel,
-                  enabled: _isCurrentStepValid,
-                  onTap: _onPrimaryTap,
+                const SizedBox(height: 12),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: _buildStepBody(),
+                  ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 8, 28, 26),
+                  child: _PrimaryActionButton(
+                    label: _primaryButtonLabel,
+                    enabled: _isCurrentStepValid,
+                    onTap: _onPrimaryTap,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -428,35 +433,31 @@ class _WelcomeStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Welcome to CGM',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 52 / 2,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111111),
-              ),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              'Before you begin, let\'s take a few minutes\nto learn more about you!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 48 / 2,
-                height: 1.25,
-                fontWeight: FontWeight.w500,
-                color: Colors.black.withValues(alpha: 0.72),
-              ),
-            ),
-          ],
+    return ListView(
+      key: const ValueKey('welcome_scroll'),
+      padding: const EdgeInsets.fromLTRB(30, 80, 30, 24),
+      children: [
+        const Text(
+          'Welcome to CGM',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
         ),
-      ),
+        const SizedBox(height: 28),
+        Text(
+          'Before you begin, let\'s take a few minutes\nto learn more about you!',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 48 / 2,
+            height: 1.25,
+            fontWeight: FontWeight.w500,
+            color: Colors.black.withValues(alpha: 0.72),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -475,28 +476,26 @@ class _NumericInputStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 54 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
-            ),
+    return ListView(
+      key: ValueKey('numeric_$title'),
+      padding: const EdgeInsets.fromLTRB(32, 56, 32, 24),
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 54 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
           ),
-          const SizedBox(height: 40),
-          _OnboardingTextField(
-            controller: controller,
-            hint: hint,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          const SizedBox(height: 220),
-        ],
-      ),
+        ),
+        const SizedBox(height: 28),
+        _OnboardingTextField(
+          controller: controller,
+          hint: hint,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+      ],
     );
   }
 }
@@ -519,43 +518,43 @@ class _SingleSelectStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 44, 24, 8),
-      child: Column(
-        children: [
+    return ListView(
+      key: ValueKey('single_$title'),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
+        ),
+        if (description != null) ...[
+          const SizedBox(height: 16),
           Text(
-            title,
-            style: const TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
+            description!,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 48 / 2,
+              height: 1.3,
+              fontWeight: FontWeight.w500,
+              color: Colors.black.withValues(alpha: 0.72),
             ),
           ),
-          if (description != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              description!,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 48 / 2,
-                height: 1.3,
-                fontWeight: FontWeight.w500,
-                color: Colors.black.withValues(alpha: 0.72),
-              ),
-            ),
-          ],
-          const SizedBox(height: 30),
-          for (final option in options) ...[
-            _SelectableCard(
-              title: option,
-              selected: selected == option,
-              onTap: () => onSelect(option),
-            ),
-            const SizedBox(height: 12),
-          ],
-          const Spacer(),
         ],
-      ),
+        const SizedBox(height: 30),
+        for (final option in options) ...[
+          _SelectableCard(
+            title: option,
+            selected: selected == option,
+            onTap: () => onSelect(option),
+          ),
+          const SizedBox(height: 12),
+        ],
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -580,53 +579,51 @@ class _DescriptionInputStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return ListView(
+      key: ValueKey('desc_$title'),
       padding: const EdgeInsets.fromLTRB(32, 26, 32, 12),
-      child: Column(
-        children: [
-          const Spacer(flex: 2),
-          Text(
-            title,
-            textAlign: TextAlign.center,
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          description,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 48 / 2,
+            height: 1.3,
+            fontWeight: FontWeight.w500,
+            color: Colors.black.withValues(alpha: 0.72),
+          ),
+        ),
+        const SizedBox(height: 34),
+        _OnboardingTextField(
+          controller: controller,
+          hint: hint,
+          keyboardType: keyboardType,
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            helperText,
             style: const TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 48 / 2,
+              fontSize: 18 / 2 * 2,
               height: 1.3,
+              color: Color(0xFF6F737A),
               fontWeight: FontWeight.w500,
-              color: Colors.black.withValues(alpha: 0.72),
             ),
           ),
-          const SizedBox(height: 34),
-          _OnboardingTextField(
-            controller: controller,
-            hint: hint,
-            keyboardType: keyboardType,
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              helperText,
-              style: const TextStyle(
-                fontSize: 18 / 2 * 2,
-                height: 1.3,
-                color: Color(0xFF6F737A),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const Spacer(flex: 3),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -643,59 +640,57 @@ class _TargetRangeStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return ListView(
+      key: const ValueKey('target_range_scroll'),
       padding: const EdgeInsets.fromLTRB(32, 26, 32, 12),
-      child: Column(
-        children: [
-          const Spacer(flex: 2),
-          const Text(
-            'Target Glucose Range',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
-            ),
+      children: [
+        const Text(
+          'Target Glucose Range',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
           ),
-          const SizedBox(height: 20),
-          Text(
-            'Set your personal time-in-range targets.',
-            textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'Set your personal time-in-range targets.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 48 / 2,
+            height: 1.3,
+            fontWeight: FontWeight.w500,
+            color: Colors.black.withValues(alpha: 0.72),
+          ),
+        ),
+        const SizedBox(height: 34),
+        _OnboardingTextField(
+          controller: lowController,
+          hint: 'Low Threshold',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: 12),
+        _OnboardingTextField(
+          controller: highController,
+          hint: 'High Threshold',
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        const SizedBox(height: 12),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Standard TIR target: 70–180 mg/dL for ≥70% of time.',
             style: TextStyle(
-              fontSize: 48 / 2,
+              fontSize: 18 / 2 * 2,
               height: 1.3,
+              color: Color(0xFF6F737A),
               fontWeight: FontWeight.w500,
-              color: Colors.black.withValues(alpha: 0.72),
             ),
           ),
-          const SizedBox(height: 34),
-          _OnboardingTextField(
-            controller: lowController,
-            hint: 'Low Threshold',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          const SizedBox(height: 12),
-          _OnboardingTextField(
-            controller: highController,
-            hint: 'High Threshold',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          const SizedBox(height: 12),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Standard TIR target: 70–180 mg/dL for ≥70% of time.',
-              style: TextStyle(
-                fontSize: 18 / 2 * 2,
-                height: 1.3,
-                color: Color(0xFF6F737A),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const Spacer(flex: 3),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -718,42 +713,41 @@ class _MultiSelectStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
-      child: Column(
-        children: [
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
-            ),
+    return ListView(
+      key: ValueKey('multi_$title'),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
           ),
-          const SizedBox(height: 16),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 48 / 2,
-              height: 1.3,
-              fontWeight: FontWeight.w500,
-              color: Colors.black.withValues(alpha: 0.72),
-            ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          description,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 48 / 2,
+            height: 1.3,
+            fontWeight: FontWeight.w500,
+            color: Colors.black.withValues(alpha: 0.72),
           ),
-          const SizedBox(height: 26),
-          for (final option in options) ...[
-            _SelectableCard(
-              title: option,
-              selected: selectedValues.contains(option),
-              onTap: () => onToggle(option),
-            ),
-            const SizedBox(height: 12),
-          ],
-          const Spacer(),
+        ),
+        const SizedBox(height: 26),
+        for (final option in options) ...[
+          _SelectableCard(
+            title: option,
+            selected: selectedValues.contains(option),
+            onTap: () => onToggle(option),
+          ),
+          const SizedBox(height: 12),
         ],
-      ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -772,43 +766,42 @@ class _DietaryPatternStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
-      child: Column(
-        children: [
-          const Text(
-            'Dietary Pattern',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
-            ),
+    return ListView(
+      key: const ValueKey('dietary_pattern_scroll'),
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      children: [
+        const Text(
+          'Dietary Pattern',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Which best describes your current\neating pattern?',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 48 / 2,
-              height: 1.3,
-              fontWeight: FontWeight.w500,
-              color: Colors.black.withValues(alpha: 0.72),
-            ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Which best describes your current\neating pattern?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 48 / 2,
+            height: 1.3,
+            fontWeight: FontWeight.w500,
+            color: Colors.black.withValues(alpha: 0.72),
           ),
-          const SizedBox(height: 26),
-          for (final option in options) ...[
-            _SelectableCard(
-              title: option.title,
-              subtitle: option.subtitle,
-              selected: selected == option.title,
-              onTap: () => onSelect(option.title),
-            ),
-            const SizedBox(height: 12),
-          ],
-          const Spacer(),
+        ),
+        const SizedBox(height: 26),
+        for (final option in options) ...[
+          _SelectableCard(
+            title: option.title,
+            subtitle: option.subtitle,
+            selected: selected == option.title,
+            onTap: () => onSelect(option.title),
+          ),
+          const SizedBox(height: 12),
         ],
-      ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -825,39 +818,39 @@ class _DateDiagnosisStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 40, 24, 12),
-      child: Column(
-        children: [
-          const Text(
-            'Date of Diagnosis',
-            style: TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
+    return ListView(
+      key: const ValueKey('diagnosis_date_scroll'),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 12),
+      children: [
+        const Text(
+          'Date of Diagnosis',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
+          ),
+        ),
+        const SizedBox(height: 34),
+        Container(
+          height: 210,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.42),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: CupertinoTheme(
+            data: const CupertinoThemeData(brightness: Brightness.light),
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.date,
+              initialDateTime: date,
+              minimumDate: DateTime(1950, 1, 1),
+              maximumDate: DateTime.now(),
+              onDateTimeChanged: onDateChanged,
             ),
           ),
-          const SizedBox(height: 34),
-          Container(
-            height: 210,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.42),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: CupertinoTheme(
-              data: const CupertinoThemeData(brightness: Brightness.light),
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: date,
-                minimumDate: DateTime(1950, 1, 1),
-                maximumDate: DateTime.now(),
-                onDateTimeChanged: onDateChanged,
-              ),
-            ),
-          ),
-          const Spacer(),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }
@@ -876,31 +869,31 @@ class _UnitSelectStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 8),
-      child: Column(
-        children: [
-          const Text(
-            'Glucose Unit',
-            style: TextStyle(
-              fontSize: 52 / 2,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111111),
-            ),
+    return ListView(
+      key: const ValueKey('glucose_unit_scroll'),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 8),
+      children: [
+        const Text(
+          'Glucose Unit',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 52 / 2,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF111111),
           ),
-          const SizedBox(height: 34),
-          for (final option in options) ...[
-            _SelectableCard(
-              title: option.unit,
-              subtitle: option.helperText,
-              selected: selectedUnit == option.unit,
-              onTap: () => onSelect(option.unit),
-            ),
-            const SizedBox(height: 12),
-          ],
-          const Spacer(),
+        ),
+        const SizedBox(height: 34),
+        for (final option in options) ...[
+          _SelectableCard(
+            title: option.unit,
+            subtitle: option.helperText,
+            selected: selectedUnit == option.unit,
+            onTap: () => onSelect(option.unit),
+          ),
+          const SizedBox(height: 12),
         ],
-      ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 }

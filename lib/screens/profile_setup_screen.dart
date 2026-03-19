@@ -175,18 +175,23 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final profileProvider = context.watch<ProfileProvider>();
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    final compactHeight = screenHeight < 760;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F4),
       body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        child: GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     const Text(
                       'Perfect! Now let\'s set up\nyour profile',
                       style: TextStyle(
@@ -332,55 +337,56 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ),
                         ],
                       ),
-                    const SizedBox(height: 120),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
-              child: SizedBox(
-                width: double.infinity,
-                height: 70,
-                child: ElevatedButton(
-                  onPressed:
-                      (_isFormValid && !profileProvider.isLoading) ? _onContinue : null,
-                  style: ElevatedButton.styleFrom(
-                    elevation: 0,
-                    disabledBackgroundColor: const Color(0xFFBFC0C2),
-                    backgroundColor: const Color(0xFF7B7C87),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(36),
-                    ),
+                      SizedBox(height: compactHeight ? 36 : 96),
+                    ],
                   ),
-                  child: profileProvider.isLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Text(
-                              'Continue',
-                              style: TextStyle(
-                                fontSize: 22 / 2 * 2,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(width: 24),
-                            Icon(Icons.arrow_forward, size: 30 / 2 * 2),
-                          ],
-                        ),
                 ),
               ),
-            ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 70,
+                  child: ElevatedButton(
+                    onPressed:
+                        (_isFormValid && !profileProvider.isLoading) ? _onContinue : null,
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      disabledBackgroundColor: const Color(0xFFBFC0C2),
+                      backgroundColor: const Color(0xFF7B7C87),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(36),
+                      ),
+                    ),
+                    child: profileProvider.isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Text(
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 22 / 2 * 2,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              SizedBox(width: 24),
+                              Icon(Icons.arrow_forward, size: 30 / 2 * 2),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
