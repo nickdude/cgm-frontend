@@ -3,6 +3,7 @@ import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/otp_verification_screen.dart';
 import '../screens/profile_setup_screen.dart';
+import '../screens/onboarding_questions_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -41,6 +42,10 @@ final appRouter = GoRouter(
           prefilledEmail: email,
         );
       },
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingQuestionsScreen(),
     ),
     // Add more routes as screens are created
     // GoRoute(

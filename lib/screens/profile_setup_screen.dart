@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -144,6 +145,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Profile details saved successfully.')),
     );
+
+    context.push('/onboarding');
   }
 
   @override
