@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../routes/app_router.dart';
 import '../../widgets/device_setup/device_setup_widgets.dart';
 
 class ManualCodeEntryScreen extends StatefulWidget {
@@ -38,6 +39,13 @@ class _ManualCodeEntryScreenState extends State<ManualCodeEntryScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Device code captured successfully.')),
     );
+
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) {
+        return;
+      }
+      context.goNamed(AppRoutes.dashboard);
+    });
   }
 
   @override

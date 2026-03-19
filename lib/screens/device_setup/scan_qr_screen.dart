@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../routes/app_router.dart';
+
 class ScanQrScreen extends StatefulWidget {
   const ScanQrScreen({super.key});
 
@@ -256,8 +258,15 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Scanning UI active (no real scan yet).')),
+                          const SnackBar(content: Text('QR detected (mock). Connecting device...')),
                         );
+
+                        Future.delayed(const Duration(milliseconds: 450), () {
+                          if (!mounted) {
+                            return;
+                          }
+                          this.context.goNamed(AppRoutes.dashboard);
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF22D7CC),

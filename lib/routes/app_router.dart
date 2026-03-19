@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/welcome_screen.dart';
 import '../screens/login_screen.dart';
@@ -10,9 +11,27 @@ import '../screens/device_setup/implant_sensor_step2_screen.dart';
 import '../screens/device_setup/implant_sensor_step3_screen.dart';
 import '../screens/device_setup/scan_qr_screen.dart';
 import '../screens/device_setup/manual_code_entry_screen.dart';
+import '../screens/dashboard/dashboard_screen.dart';
+
+class AppRoutes {
+  static const dashboard = 'dashboard';
+}
 
 final appRouter = GoRouter(
   initialLocation: '/',
+  errorBuilder: (context, state) {
+    final path = state.uri.path;
+
+    if (path == '/dashboard' || path == '/dashboard/') {
+      return const DashboardScreen();
+    }
+
+    return Scaffold(
+      body: Center(
+        child: Text('Route not found: $path'),
+      ),
+    );
+  },
   routes: [
     GoRoute(
       path: '/',
@@ -76,6 +95,15 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/device/manual-code',
       builder: (context, state) => const ManualCodeEntryScreen(),
+    ),
+    GoRoute(
+      path: '/dashboard',
+      name: AppRoutes.dashboard,
+      builder: (context, state) => const DashboardScreen(),
+    ),
+    GoRoute(
+      path: '/dashboard',
+      redirect: (_, __) => '/dashboard',
     ),
     // Add more routes as screens are created
     // GoRoute(
