@@ -27,9 +27,11 @@ class AppBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final navHeight = 85 + bottomInset;
+    final expandedHeight = (isActionMenuOpen ? 360.0 : 85.0) + bottomInset;
 
     return SizedBox(
-      height: 85 + bottomInset,
+      height: expandedHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -61,7 +63,7 @@ class AppBottomNavBar extends StatelessWidget {
             right: 0,
             bottom: 0,
             child: Container(
-              height: 72 + bottomInset,
+              height: navHeight,
               padding: EdgeInsets.only(bottom: bottomInset),
               decoration: const BoxDecoration(
                 color: Color(0xFFF6F6F6),

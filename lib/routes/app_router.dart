@@ -12,6 +12,11 @@ import '../screens/device_setup/implant_sensor_step3_screen.dart';
 import '../screens/device_setup/scan_qr_screen.dart';
 import '../screens/device_setup/manual_code_entry_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/quick_actions/diet_screen.dart';
+import '../screens/quick_actions/insulin_screen.dart';
+import '../screens/quick_actions/medicine_screen.dart';
+import '../screens/quick_actions/exercise_screen.dart';
+import '../screens/quick_actions/finger_blood_screen.dart';
 
 class AppRoutes {
   static const dashboard = 'dashboard';
@@ -102,17 +107,24 @@ final appRouter = GoRouter(
       builder: (context, state) => const DashboardScreen(),
     ),
     GoRoute(
-      path: '/dashboard',
-      redirect: (_, __) => '/dashboard',
+      path: '/diet',
+      builder: (context, state) => const DietScreen(),
     ),
-    // Add more routes as screens are created
-    // GoRoute(
-    //   path: '/signup',
-    //   builder: (context, state) => const SignUpScreen(),
-    // ),
-    // GoRoute(
-    //   path: '/dashboard',
-    //   builder: (context, state) => const DashboardScreen(),
-    // ),
+    GoRoute(
+      path: '/insulin',
+      builder: (context, state) => const InsulinScreen(),
+    ),
+    GoRoute(
+      path: '/medicine',
+      builder: (context, state) => const MedicineScreen(),
+    ),
+    GoRoute(
+      path: '/exercise',
+      builder: (context, state) => const ExerciseScreen(),
+    ),
+    GoRoute(
+      path: '/finger-blood',
+      builder: (context, state) => const FingerBloodScreen(),
+    ),
   ],
 );
