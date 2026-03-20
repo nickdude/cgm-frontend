@@ -75,8 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final userPhone = authProvider.user?.phone ?? '';
-    context.push('/profile/setup/google?phone=${_cleanPhoneForRoute(userPhone)}');
+    final userEmail = authProvider.user?.email ?? '';
+    context.push('/profile/setup/email-login?email=$userEmail');
   }
 
   Future<void> _handleAppleLogin() async {
@@ -103,8 +103,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final userPhone = authProvider.user?.phone ?? '';
-    context.push('/profile/setup/apple?phone=${_cleanPhoneForRoute(userPhone)}');
+    final userEmail = authProvider.user?.email ?? '';
+    context.push('/profile/setup/email-login?email=$userEmail');
   }
 
   Future<void> _handleFacebookLogin() async {
@@ -131,8 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final userPhone = authProvider.user?.phone ?? '';
-    context.push('/profile/setup/facebook?phone=${_cleanPhoneForRoute(userPhone)}');
+    final userEmail = authProvider.user?.email ?? '';
+    context.push('/profile/setup/email-login?email=$userEmail');
   }
 
   @override

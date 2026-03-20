@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../services/profile_service.dart';
 import '../utils/logger.dart';
@@ -17,6 +18,33 @@ class ProfileProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  String _extractErrorMessage(Object e) {
+    if (e is DioException) {
+      final responseData = e.response?.data;
+      if (responseData is Map) {
+        final message = responseData['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message;
+        }
+      }
+
+      if (e.message != null && e.message!.trim().isNotEmpty) {
+        return e.message!;
+      }
+    }
+
+    if (e is Exception) {
+      final text = e.toString();
+      const prefix = 'Exception: ';
+      if (text.startsWith(prefix)) {
+        return text.substring(prefix.length).trim();
+      }
+      return text;
+    }
+
+    return e.toString();
+  }
+
   // Load user profile
   Future<void> loadProfile(String userId) async {
     _setLoading(true);
@@ -25,7 +53,7 @@ class ProfileProvider extends ChangeNotifier {
       _user = await _profileService.getProfile(userId);
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      _error = _extractErrorMessage(e);
       logger.e('Load profile error: $e');
     } finally {
       _setLoading(false);
@@ -41,7 +69,7 @@ class ProfileProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _extractErrorMessage(e);
       logger.e('Update profile error: $e');
       return false;
     } finally {
@@ -59,7 +87,7 @@ class ProfileProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _extractErrorMessage(e);
       logger.e('Upload photo error: $e');
       return false;
     } finally {

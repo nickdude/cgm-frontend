@@ -35,9 +35,49 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _picker = ImagePicker();
 
   Uint8List? _photoBytes;
+  String? _photoPath;
+  String? _existingPhotoUrl;
+  bool _didPrefillFromProfile = false;
 
   bool get _isPhoneFlow =>
       widget.contactMode == ProfileContactMode.phoneLoginNeedsEmail;
+
+  String _normalizePhone(String value) {
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length == 12 && digits.startsWith('91')) {
+      return digits.substring(2);
+    }
+    if (digits.length > 10) {
+      return digits.substring(digits.length - 10);
+    }
+    return digits;
+  }
+
+  void _prefillFromExistingProfile() {
+    final user = context.read<AuthProvider>().user;
+    if (user == null) {
+      return;
+    }
+
+    if (user.fullName.trim().isNotEmpty) {
+      _nameController.text = user.fullName.trim();
+    }
+
+    if (_isPhoneFlow) {
+      if (user.email.trim().isNotEmpty) {
+        _emailController.text = user.email.trim();
+      }
+    } else {
+      final phone = user.phone != null ? _normalizePhone(user.phone!) : '';
+      if (phone.isNotEmpty) {
+        _phoneController.text = phone;
+      }
+    }
+
+    if (user.photoUrl != null && user.photoUrl!.trim().isNotEmpty) {
+      _existingPhotoUrl = user.photoUrl!.trim();
+    }
+  }
 
   bool _isValidEmail(String email) {
     final value = email.trim();
@@ -86,6 +126,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       setState(() {
         _photoBytes = bytes;
+        _photoPath = file.path;
+        _existingPhotoUrl = null;
       });
     } on PlatformException catch (e) {
       if (!mounted) {
@@ -130,6 +172,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           : _phoneController.text.replaceAll(RegExp(r'[^0-9]'), ''),
     };
 
+    if (_photoPath != null && _photoPath!.isNotEmpty) {
+      final photoUploaded = await profileProvider.uploadPhoto(userId, _photoPath!);
+      if (!mounted) {
+        return;
+      }
+
+      if (!photoUploaded) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(profileProvider.error ?? 'Unable to upload photo')),
+        );
+        return;
+      }
+    }
+
     final success = await profileProvider.updateProfile(userId, payload);
     if (!mounted) {
       return;
@@ -158,6 +214,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _nameController.addListener(_onFieldChanged);
     _emailController.addListener(_onFieldChanged);
     _phoneController.addListener(_onFieldChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_didPrefillFromProfile) {
+      return;
+    }
+
+    _prefillFromExistingProfile();
+    _didPrefillFromProfile = true;
   }
 
   void _onFieldChanged() {
@@ -227,9 +295,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                       image: MemoryImage(_photoBytes!),
                                       fit: BoxFit.cover,
                                     )
-                                  : null,
+                                  : (_existingPhotoUrl != null
+                                      ? DecorationImage(
+                                          image: NetworkImage(_existingPhotoUrl!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null),
                             ),
-                            child: _photoBytes == null
+                            child: (_photoBytes == null && _existingPhotoUrl == null)
                                 ? const Icon(
                                     Icons.photo_size_select_actual_outlined,
                                     color: Color(0xFF737373),
