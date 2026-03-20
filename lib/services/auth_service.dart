@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import '../constants/app_constants.dart';
 import '../models/auth_response.dart';
 import '../utils/logger.dart';
@@ -9,7 +10,7 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _apiService;
   final _secureStorage = const FlutterSecureStorage();
-  static const bool _useMockApi = true;
+  static const bool _useMockApi = false;
   static const String _mockOtpValue = '123456';
 
   AuthService(this._apiService);
@@ -23,6 +24,27 @@ class AuthService {
       return digits.substring(digits.length - 10);
     }
     return digits;
+  }
+
+  String _extractApiMessage(Object error, String fallbackMessage) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map) {
+        final message = data['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message;
+        }
+        if (message is Map) {
+          return message.values.map((value) => value.toString()).join(', ');
+        }
+      }
+
+      if (error.message != null && error.message!.trim().isNotEmpty) {
+        return error.message!;
+      }
+    }
+
+    return fallbackMessage;
   }
 
   // Phone OTP Sign Up
@@ -44,13 +66,15 @@ class AuthService {
 
     try {
       final response = await _apiService.post(
-        '/auth/send-otp',
-        data: {'phone': phone},
+        '/auth/request-otp',
+        data: {'mobile': _normalizeIndianPhone(phone)},
       );
-      return response.data;
+      return (response.data is Map<String, dynamic>)
+          ? response.data as Map<String, dynamic>
+          : <String, dynamic>{};
     } catch (e) {
       logger.e('Sign up with phone error: $e');
-      rethrow;
+      throw Exception(_extractApiMessage(e, 'Failed to request OTP'));
     }
   }
 
@@ -92,61 +116,29 @@ class AuthService {
     try {
       final response = await _apiService.post(
         '/auth/verify-otp',
-        data: {'phone': phone, 'otp': otp},
+        data: {'mobile': _normalizeIndianPhone(phone), 'otp': otp},
       );
       final authResponse = AuthResponse.fromJson(response.data);
       
       if (authResponse.success) {
         await _saveToken(authResponse.token);
         await _saveUserId(authResponse.userId);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(AppConstants.isLoggedInKey, true);
+        await prefs.setString(AppConstants.userPhoneKey, _normalizeIndianPhone(phone));
       }
       return authResponse;
     } catch (e) {
       logger.e('Verify OTP error: $e');
-      rethrow;
-    }
-  }
-
-  // Email Login
-  Future<AuthResponse> loginWithEmail(String email, String password) async {
-    if (_useMockApi) {
-      await Future.delayed(const Duration(milliseconds: 650));
-      final prefs = await SharedPreferences.getInstance();
-      final mockUserId = 'mock_email_${email.toLowerCase()}';
-      final mockToken = 'mock_token_${DateTime.now().millisecondsSinceEpoch}';
-
-      await _saveToken(mockToken);
-      await _saveUserId(mockUserId);
-      await prefs.setBool(AppConstants.isLoggedInKey, true);
-
-      return AuthResponse(
-        token: mockToken,
-        userId: mockUserId,
-        message: 'Login successful',
-        success: true,
-      );
-    }
-
-    try {
-      final response = await _apiService.post(
-        '/auth/login',
-        data: {'email': email, 'password': password},
-      );
-      final authResponse = AuthResponse.fromJson(response.data);
-      
-      if (authResponse.success) {
-        await _saveToken(authResponse.token);
-        await _saveUserId(authResponse.userId);
-      }
-      return authResponse;
-    } catch (e) {
-      logger.e('Login error: $e');
-      rethrow;
+      throw Exception(_extractApiMessage(e, 'OTP verification failed'));
     }
   }
 
   // Google Sign In
-  Future<AuthResponse> signInWithGoogle(String idToken) async {
+  Future<AuthResponse> signInWithGoogle(
+    String idToken,
+    Map<String, dynamic> user,
+  ) async {
     if (_useMockApi) {
       await Future.delayed(const Duration(milliseconds: 500));
       final userId = 'mock_google_user';
@@ -163,24 +155,32 @@ class AuthService {
 
     try {
       final response = await _apiService.post(
-        '/auth/google-signin',
-        data: {'idToken': idToken},
+        '/auth/google',
+        data: {
+          'idToken': idToken,
+          'user': user,
+        },
       );
       final authResponse = AuthResponse.fromJson(response.data);
       
       if (authResponse.success) {
         await _saveToken(authResponse.token);
         await _saveUserId(authResponse.userId);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(AppConstants.isLoggedInKey, true);
       }
       return authResponse;
     } catch (e) {
       logger.e('Google sign in error: $e');
-      rethrow;
+      throw Exception(_extractApiMessage(e, 'Google login failed'));
     }
   }
 
   // Apple Sign In
-  Future<AuthResponse> signInWithApple(String identityToken) async {
+  Future<AuthResponse> signInWithApple(
+    String identityToken,
+    Map<String, dynamic> user,
+  ) async {
     if (_useMockApi) {
       await Future.delayed(const Duration(milliseconds: 500));
       final userId = 'mock_apple_user';
@@ -197,24 +197,32 @@ class AuthService {
 
     try {
       final response = await _apiService.post(
-        '/auth/apple-signin',
-        data: {'identityToken': identityToken},
+        '/auth/apple',
+        data: {
+          'identityToken': identityToken,
+          'user': user,
+        },
       );
       final authResponse = AuthResponse.fromJson(response.data);
       
       if (authResponse.success) {
         await _saveToken(authResponse.token);
         await _saveUserId(authResponse.userId);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(AppConstants.isLoggedInKey, true);
       }
       return authResponse;
     } catch (e) {
       logger.e('Apple sign in error: $e');
-      rethrow;
+      throw Exception(_extractApiMessage(e, 'Apple login failed'));
     }
   }
 
   // Facebook Sign In
-  Future<AuthResponse> signInWithFacebook(String accessToken) async {
+  Future<AuthResponse> signInWithFacebook(
+    String accessToken,
+    Map<String, dynamic> user,
+  ) async {
     if (_useMockApi) {
       await Future.delayed(const Duration(milliseconds: 500));
       final userId = 'mock_facebook_user';
@@ -231,19 +239,24 @@ class AuthService {
 
     try {
       final response = await _apiService.post(
-        '/auth/facebook-signin',
-        data: {'accessToken': accessToken},
+        '/auth/facebook',
+        data: {
+          'accessToken': accessToken,
+          'user': user,
+        },
       );
       final authResponse = AuthResponse.fromJson(response.data);
       
       if (authResponse.success) {
         await _saveToken(authResponse.token);
         await _saveUserId(authResponse.userId);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(AppConstants.isLoggedInKey, true);
       }
       return authResponse;
     } catch (e) {
       logger.e('Facebook sign in error: $e');
-      rethrow;
+      throw Exception(_extractApiMessage(e, 'Facebook login failed'));
     }
   }
 

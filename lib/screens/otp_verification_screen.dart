@@ -196,7 +196,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                                       SnackBar(
                                         content: Text(
                                           success
-                                              ? 'OTP resent (use 123456)'
+                                              ? 'OTP resent successfully'
                                               : 'Unable to resend OTP',
                                         ),
                                       ),

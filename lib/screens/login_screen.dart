@@ -14,6 +14,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   late TextEditingController _phoneController;
 
+  String _cleanPhoneForRoute(String phone) {
+    return phone.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
   String get _normalizedPhone {
     final onlyDigits = _phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
     return onlyDigits;
@@ -42,9 +46,93 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('OTP sent (mock: 123456)')),
+      const SnackBar(content: Text('OTP sent successfully')),
     );
     context.push('/otp?phone=%2B91%20$phone');
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    final authProvider = context.read<AuthProvider>();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final success = await authProvider.signInWithGoogle(
+      'google_token_$timestamp',
+      {
+        'googleId': 'google_$timestamp',
+        'email': 'google.user$timestamp@cgm.app',
+        'name': 'Google User',
+        'profileImage': null,
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? 'Google login failed')),
+      );
+      return;
+    }
+
+    final userPhone = authProvider.user?.phone ?? '';
+    context.push('/profile/setup/google?phone=${_cleanPhoneForRoute(userPhone)}');
+  }
+
+  Future<void> _handleAppleLogin() async {
+    final authProvider = context.read<AuthProvider>();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final success = await authProvider.signInWithApple(
+      'apple_token_$timestamp',
+      {
+        'appleId': 'apple_$timestamp',
+        'email': 'apple.user$timestamp@privaterelay.appleid.com',
+        'name': 'Apple User',
+        'profileImage': null,
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? 'Apple login failed')),
+      );
+      return;
+    }
+
+    final userPhone = authProvider.user?.phone ?? '';
+    context.push('/profile/setup/apple?phone=${_cleanPhoneForRoute(userPhone)}');
+  }
+
+  Future<void> _handleFacebookLogin() async {
+    final authProvider = context.read<AuthProvider>();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final success = await authProvider.signInWithFacebook(
+      'facebook_token_$timestamp',
+      {
+        'facebookId': 'facebook_$timestamp',
+        'email': 'facebook.user$timestamp@cgm.app',
+        'name': 'Facebook User',
+        'profileImage': null,
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.error ?? 'Facebook login failed')),
+      );
+      return;
+    }
+
+    final userPhone = authProvider.user?.phone ?? '';
+    context.push('/profile/setup/facebook?phone=${_cleanPhoneForRoute(userPhone)}');
   }
 
   @override
@@ -278,22 +366,25 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    const Row(
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         _SocialCircle(
                           icon: Icons.apple,
                           iconColor: Color(0xFF1F2933),
+                          onTap: authProvider.isLoading ? null : _handleAppleLogin,
                         ),
                         SizedBox(width: 16),
                         _SocialCircle(
                           label: 'G',
                           iconColor: Color(0xFFEA4335),
+                          onTap: authProvider.isLoading ? null : _handleGoogleLogin,
                         ),
                         SizedBox(width: 16),
                         _SocialCircle(
                           icon: Icons.facebook,
                           iconColor: Color(0xFF1877F2),
+                          onTap: authProvider.isLoading ? null : _handleFacebookLogin,
                         ),
                       ],
                     ),
@@ -373,33 +464,38 @@ class _SocialCircle extends StatelessWidget {
     this.icon,
     this.label,
     required this.iconColor,
+    this.onTap,
   });
 
   final IconData? icon;
   final String? label;
   final Color iconColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 52,
-      height: 52,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFD6D9DE)),
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: icon != null
-          ? Icon(icon, color: iconColor, size: 24)
-          : Text(
-              label ?? '',
-              style: TextStyle(
-                color: iconColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: const Color(0xFFD6D9DE)),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: icon != null
+            ? Icon(icon, color: iconColor, size: 24)
+            : Text(
+                label ?? '',
+                style: TextStyle(
+                  color: iconColor,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 22,
+                ),
               ),
-            ),
+      ),
     );
   }
 }
