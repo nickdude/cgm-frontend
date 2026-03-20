@@ -28,36 +28,12 @@ class AppBottomNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final navHeight = 85 + bottomInset;
-    final expandedHeight = (isActionMenuOpen ? 360.0 : 85.0) + bottomInset;
 
     return SizedBox(
-      height: expandedHeight,
+      height: navHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 68 + bottomInset,
-            child: IgnorePointer(
-              ignoring: !isActionMenuOpen,
-              child: AnimatedSlide(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOut,
-                offset: isActionMenuOpen ? Offset.zero : const Offset(0, 0.12),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 220),
-                  opacity: isActionMenuOpen ? 1 : 0,
-                  child: Align(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 286),
-                      child: _QuickActionMenu(onActionTap: onQuickActionTap),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
           Positioned(
             left: 0,
             right: 0,
@@ -208,8 +184,8 @@ class _CenterActionButton extends StatelessWidget {
   }
 }
 
-class _QuickActionMenu extends StatelessWidget {
-  const _QuickActionMenu({required this.onActionTap});
+class QuickActionMenu extends StatelessWidget {
+  const QuickActionMenu({required this.onActionTap, super.key});
 
   final ValueChanged<QuickActionType>? onActionTap;
 

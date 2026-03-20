@@ -56,8 +56,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F4),
+      extendBody: true,
     //   appBar: AppBar(
     //     backgroundColor: const Color(0xFFF3F3F4),
     //     elevation: 0,
@@ -71,15 +74,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     //       ),
     //     ),
     //   ),
-      body: GestureDetector(
-        onTap: _isQuickMenuOpen ? _onCenterTap : null,
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+      body: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            onTap: _isQuickMenuOpen ? _onCenterTap : null,
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // const _SectionHeader(title: 'Dashboard'),
                 // const SizedBox(height: 12),
                 // _OverviewCard(tabTitle: _titles[_currentIndex]),
@@ -148,10 +154,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 90 + bottomInset,
+            child: IgnorePointer(
+              ignoring: !_isQuickMenuOpen,
+              child: AnimatedSlide(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                offset: _isQuickMenuOpen ? Offset.zero : const Offset(0, 0.12),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 220),
+                  opacity: _isQuickMenuOpen ? 1 : 0,
+                  child: Align(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 286),
+                      child: QuickActionMenu(onActionTap: _onQuickActionTap),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _currentIndex,

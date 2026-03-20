@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../widgets/common/quick_action_header.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/quick_action_provider.dart';
+import '../../utils/date_time_utils.dart';
+import '../../widgets/common/quick_action_header.dart';
 
 class FingerBloodScreen extends StatefulWidget {
   const FingerBloodScreen({super.key});
@@ -22,6 +26,8 @@ class _FingerBloodScreenState extends State<FingerBloodScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final quickActionProvider = context.watch<QuickActionProvider>();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F4),
       appBar: PreferredSize(
@@ -218,7 +224,9 @@ class _FingerBloodScreenState extends State<FingerBloodScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: quickActionProvider.isLoading
+                      ? null
+                      : () async {
                     if (_bgmController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -227,6 +235,43 @@ class _FingerBloodScreenState extends State<FingerBloodScreen> {
                       );
                       return;
                     }
+
+                    final userId = context.read<AuthProvider>().user?.id;
+                    if (userId == null || userId.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Session expired. Please login again.')),
+                      );
+                      return;
+                    }
+
+                    final payload = {
+                      'actionTime': DateTimeUtils.parseDisplayTimeToIso(_bloodTime),
+                      'status': _bloodStatus,
+                      'bgmValue': _bgmController.text.trim(),
+                      'unit': 'mmol/L',
+                    };
+
+                    final success = await context.read<QuickActionProvider>().saveFingerBlood(
+                      userId,
+                      payload,
+                    );
+
+                    if (!mounted) {
+                      return;
+                    }
+
+                    if (!success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.read<QuickActionProvider>().error ??
+                                'Unable to save finger blood entry',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Blood glucose saved successfully!'),
@@ -241,14 +286,23 @@ class _FingerBloodScreenState extends State<FingerBloodScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: quickActionProvider.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Save',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),

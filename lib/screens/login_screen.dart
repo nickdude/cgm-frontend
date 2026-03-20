@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -230,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       children: [
                         Container(
-                          width: 96,
+                          width: 108,
                           height: 56,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
@@ -240,12 +242,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           alignment: Alignment.center,
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text('🇮🇳', style: TextStyle(fontSize: 16)),
-                                SizedBox(width: 6),
-                                Text(
+                                const _IndiaFlagIcon(),
+                                const SizedBox(width: 6),
+                                const Text(
                                   '+91',
                                   style: TextStyle(
                                     fontSize: 14,
@@ -498,4 +500,75 @@ class _SocialCircle extends StatelessWidget {
       ),
     );
   }
+}
+
+class _IndiaFlagIcon extends StatelessWidget {
+  const _IndiaFlagIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFD5D9DE), width: 0.8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: const ClipOval(
+        child: CustomPaint(
+          painter: _IndiaFlagPainter(),
+        ),
+      ),
+    );
+  }
+}
+
+class _IndiaFlagPainter extends CustomPainter {
+  const _IndiaFlagPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stripeHeight = size.height / 3;
+
+    final saffron = Paint()..color = const Color(0xFFFF9933);
+    final white = Paint()..color = Colors.white;
+    final green = Paint()..color = const Color(0xFF138808);
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, stripeHeight), saffron);
+    canvas.drawRect(Rect.fromLTWH(0, stripeHeight, size.width, stripeHeight), white);
+    canvas.drawRect(Rect.fromLTWH(0, stripeHeight * 2, size.width, stripeHeight), green);
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerR = size.height * 0.16;
+    final innerR = size.height * 0.02;
+    final chakraPaint = Paint()
+      ..color = const Color(0xFF000080)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.7;
+
+    canvas.drawCircle(center, outerR, chakraPaint);
+
+    final spokePaint = Paint()
+      ..color = const Color(0xFF000080)
+      ..strokeWidth = 0.45;
+
+    for (int i = 0; i < 24; i++) {
+      final angle = (i * 15) * 3.141592653589793 / 180;
+      final end = Offset(
+        center.dx + outerR * math.cos(angle),
+        center.dy + outerR * math.sin(angle),
+      );
+      canvas.drawLine(center, end, spokePaint);
+    }
+
+    canvas.drawCircle(
+      center,
+      innerR,
+      Paint()..color = const Color(0xFF000080),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

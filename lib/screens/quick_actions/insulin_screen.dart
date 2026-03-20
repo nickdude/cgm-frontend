@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../../widgets/common/quick_action_header.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/quick_action_provider.dart';
+import '../../utils/date_time_utils.dart';
+import '../../widgets/common/quick_action_header.dart';
 
 class InsulinScreen extends StatefulWidget {
   const InsulinScreen({super.key});
@@ -12,25 +16,70 @@ class InsulinScreen extends StatefulWidget {
 class _InsulinScreenState extends State<InsulinScreen> {
   final _insulinNameController = TextEditingController();
   String _insulinTime = '08-03 17:28';
-  int _imageCount = 0;
+  static const int _maxTextLength = 150;
   final int _maxImages = 150;
   final ImagePicker _picker = ImagePicker();
+  final List<String> _imagePaths = [];
+
+  int get _textCount => _insulinNameController.text.length;
+
+  @override
+  void initState() {
+    super.initState();
+    _insulinNameController.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    setState(() {});
+  }
 
   @override
   void dispose() {
+    _insulinNameController.removeListener(_onTextChanged);
     _insulinNameController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Upload from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) {
+      return;
+    }
+
+    final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
-      setState(() => _imageCount = (_imageCount + 1).clamp(0, _maxImages));
+      setState(() {
+        if (_imagePaths.length < _maxImages) {
+          _imagePaths.add(pickedFile.path);
+        }
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final quickActionProvider = context.watch<QuickActionProvider>();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F4),
       appBar: PreferredSize(
@@ -140,12 +189,15 @@ class _InsulinScreenState extends State<InsulinScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                       child: TextField(
                         controller: _insulinNameController,
+                        maxLength: _maxTextLength,
+                        onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: 'Please enter the injection information',
                           hintStyle: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFFA8A8A8),
                           ),
+                          counterText: '',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.zero,
                         ),
@@ -157,36 +209,41 @@ class _InsulinScreenState extends State<InsulinScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          GestureDetector(
-                            onTap: _pickImage,
-                            child: DottedBorder(
-                              child: Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    size: 32,
-                                    color: const Color(0xFFC0C0C0),
+                      child: SizedBox(
+                        height: 110,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '$_textCount/$_maxTextLength',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFFA8A8A8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: SizedBox(
+                                width: 56,
+                                height: 56,
+                                child: DottedBorder(
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      size: 24,
+                                      color: Color(0xFF8E8E93),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              '$_imageCount/$_maxImages',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFFA8A8A8),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -196,7 +253,44 @@ class _InsulinScreenState extends State<InsulinScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: quickActionProvider.isLoading
+                      ? null
+                      : () async {
+                    final userId = context.read<AuthProvider>().user?.id;
+                    if (userId == null || userId.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Session expired. Please login again.')),
+                      );
+                      return;
+                    }
+
+                    final payload = {
+                      'actionTime': DateTimeUtils.parseDisplayTimeToIso(_insulinTime),
+                      'insulinName': _insulinNameController.text.trim(),
+                    };
+
+                    final success = await context.read<QuickActionProvider>().saveInsulin(
+                      userId,
+                      payload,
+                      _imagePaths,
+                    );
+
+                    if (!mounted) {
+                      return;
+                    }
+
+                    if (!success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            context.read<QuickActionProvider>().error ??
+                                'Unable to save insulin entry',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Insulin saved successfully!')),
                     );
@@ -209,14 +303,23 @@ class _InsulinScreenState extends State<InsulinScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Save',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: quickActionProvider.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Save',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 24),

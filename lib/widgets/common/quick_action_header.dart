@@ -11,37 +11,48 @@ class QuickActionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 16),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (context.canPop()) {
-                context.pop();
-              }
-            },
-            child: const Icon(
-              Icons.arrow_back,
-              size: 24,
-              color: Color(0xFF111111),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF111111),
+    return Material(
+      color: const Color(0xFFF3F3F4),
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: 56,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Center(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 34 / 2,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111111),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
+              Positioned(
+                left: 8,
+                child: IconButton(
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                      return;
+                    }
+
+                    Navigator.of(context).maybePop();
+                  },
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 22,
+                    color: Color(0xFF111111),
+                  ),
+                  splashRadius: 22,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 40),
-        ],
+        ),
       ),
     );
   }
