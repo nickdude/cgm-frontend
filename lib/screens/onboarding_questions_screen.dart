@@ -1,6 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/auth_provider.dart';
+import '../providers/onboarding_provider.dart';
 
 class OnboardingQuestionsScreen extends StatefulWidget {
   const OnboardingQuestionsScreen({super.key});
@@ -27,6 +31,7 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
   final Set<String> _medications = {};
   final Set<String> _comorbidities = {};
   DateTime _diagnosisDate = DateTime(2026, 1, 1);
+  bool _didBootstrap = false;
 
   final List<String> _diabetesTypes = const [
     'None',
@@ -141,6 +146,80 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
     _highThresholdController.addListener(_onInputChanged);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_didBootstrap) {
+      return;
+    }
+
+    _didBootstrap = true;
+    _bootstrapOnboarding();
+  }
+
+  Future<void> _bootstrapOnboarding() async {
+    final authProvider = context.read<AuthProvider>();
+    final onboardingProvider = context.read<OnboardingProvider>();
+    final userId = authProvider.user?.id;
+
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+
+    final loaded = await onboardingProvider.loadAnswers(userId);
+    if (!mounted || !loaded) {
+      return;
+    }
+
+    final answers = onboardingProvider.answers;
+    if (answers == null || answers.isEmpty) {
+      return;
+    }
+
+    _applySavedAnswers(answers);
+  }
+
+  void _applySavedAnswers(Map<String, dynamic> answers) {
+    setState(() {
+      _weightController.text = (answers['weight'] ?? '').toString();
+      _heightController.text = (answers['height'] ?? '').toString();
+      _hba1cController.text = (answers['hba1c'] ?? '').toString();
+      _lowThresholdController.text = (answers['targetLow'] ?? '').toString();
+      _highThresholdController.text = (answers['targetHigh'] ?? '').toString();
+
+      _diabetesType = answers['diabetesType']?.toString();
+      _glucoseUnit = answers['glucoseUnit']?.toString();
+      _cgmSensor = answers['cgmSensor']?.toString();
+      _activityLevel = answers['activityLevel']?.toString();
+      _dietaryPattern = answers['dietaryPattern']?.toString();
+
+      final diagnosisRaw = answers['diagnosisDate'];
+      if (diagnosisRaw is String && diagnosisRaw.isNotEmpty) {
+        final parsed = DateTime.tryParse(diagnosisRaw);
+        if (parsed != null) {
+          _diagnosisDate = parsed;
+        }
+      }
+
+      _medications
+        ..clear()
+        ..addAll(
+          (answers['medications'] is List)
+              ? (answers['medications'] as List).map((item) => item.toString())
+              : const <String>[],
+        );
+
+      _comorbidities
+        ..clear()
+        ..addAll(
+          (answers['comorbidities'] is List)
+              ? (answers['comorbidities'] as List).map((item) => item.toString())
+              : const <String>[],
+        );
+    });
+  }
+
   void _onInputChanged() {
     setState(() {});
   }
@@ -171,7 +250,7 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
     return false;
   }
 
-  void _onPrimaryTap() {
+  Future<void> _onPrimaryTap() async {
     if (!_isCurrentStepValid) {
       return;
     }
@@ -180,6 +259,17 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
       setState(() {
         _step += 1;
       });
+      return;
+    }
+
+    final authProvider = context.read<AuthProvider>();
+    final onboardingProvider = context.read<OnboardingProvider>();
+    final userId = authProvider.user?.id;
+
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session expired. Please login again.')),
+      );
       return;
     }
 
@@ -200,7 +290,17 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
       'progress': '13/13',
     };
 
-    debugPrint('Onboarding part-1 payload: $payload');
+    final success = await onboardingProvider.saveAnswers(userId, payload);
+    if (!mounted) {
+      return;
+    }
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(onboardingProvider.error ?? 'Unable to save onboarding')),
+      );
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Onboarding (part 1) saved.')),
@@ -210,6 +310,8 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final onboardingProvider = context.watch<OnboardingProvider>();
+
     return PopScope(
       canPop: _step == 0,
       onPopInvokedWithResult: (didPop, _) {
@@ -239,8 +341,11 @@ class _OnboardingQuestionsScreenState extends State<OnboardingQuestionsScreen> {
                   padding: const EdgeInsets.fromLTRB(28, 8, 28, 26),
                   child: _PrimaryActionButton(
                     label: _primaryButtonLabel,
-                    enabled: _isCurrentStepValid,
-                    onTap: _onPrimaryTap,
+                    enabled: _isCurrentStepValid && !onboardingProvider.isLoading,
+                    isLoading: onboardingProvider.isLoading,
+                    onTap: () {
+                      _onPrimaryTap();
+                    },
                   ),
                 ),
               ],
@@ -1026,11 +1131,13 @@ class _PrimaryActionButton extends StatelessWidget {
     required this.label,
     required this.enabled,
     required this.onTap,
+    this.isLoading = false,
   });
 
   final String label;
   final bool enabled;
   final VoidCallback onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -1048,13 +1155,22 @@ class _PrimaryActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 42 / 2,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 42 / 2,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
       ),
     );
   }

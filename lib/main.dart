@@ -4,8 +4,10 @@ import 'routes/app_router.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/profile_service.dart';
+import 'services/onboarding_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
+import 'providers/onboarding_provider.dart';
 import 'constants/app_colors.dart';
 
 void main() {
@@ -21,17 +23,22 @@ class MyApp extends StatelessWidget {
     final apiService = ApiService();
     final authService = AuthService(apiService);
     final profileService = ProfileService(apiService);
+    final onboardingService = OnboardingService(apiService);
 
     return MultiProvider(
       providers: [
         Provider<ApiService>(create: (_) => apiService),
         Provider<AuthService>(create: (_) => authService),
         Provider<ProfileService>(create: (_) => profileService),
+        Provider<OnboardingService>(create: (_) => onboardingService),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService, profileService),
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileProvider(profileService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OnboardingProvider(onboardingService),
         ),
       ],
       child: MaterialApp.router(
