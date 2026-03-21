@@ -6,10 +6,12 @@ import 'services/auth_service.dart';
 import 'services/profile_service.dart';
 import 'services/onboarding_service.dart';
 import 'services/quick_action_service.dart';
+import 'services/dashboard_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/onboarding_provider.dart';
 import 'providers/quick_action_provider.dart';
+import 'providers/dashboard_provider.dart';
 import 'constants/app_colors.dart';
 
 void main() {
@@ -27,6 +29,7 @@ class MyApp extends StatelessWidget {
     final profileService = ProfileService(apiService);
     final onboardingService = OnboardingService(apiService);
     final quickActionService = QuickActionService(apiService);
+    final dashboardService = DashboardService(apiService);
 
     return MultiProvider(
       providers: [
@@ -35,6 +38,7 @@ class MyApp extends StatelessWidget {
         Provider<ProfileService>(create: (_) => profileService),
         Provider<OnboardingService>(create: (_) => onboardingService),
         Provider<QuickActionService>(create: (_) => quickActionService),
+        Provider<DashboardService>(create: (_) => dashboardService),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authService, profileService),
         ),
@@ -46,6 +50,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => QuickActionProvider(quickActionService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DashboardProvider(dashboardService),
         ),
       ],
       child: MaterialApp.router(

@@ -7,7 +7,9 @@ import '../../utils/date_time_utils.dart';
 import '../../widgets/common/quick_action_header.dart';
 
 class InsulinScreen extends StatefulWidget {
-  const InsulinScreen({super.key});
+  const InsulinScreen({super.key, this.initialEpochMs});
+
+  final int? initialEpochMs;
 
   @override
   State<InsulinScreen> createState() => _InsulinScreenState();
@@ -26,6 +28,9 @@ class _InsulinScreenState extends State<InsulinScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialEpochMs != null) {
+      _insulinTime = DateTimeUtils.formatEpochMsToDisplay(widget.initialEpochMs!);
+    }
     _insulinNameController.addListener(_onTextChanged);
   }
 

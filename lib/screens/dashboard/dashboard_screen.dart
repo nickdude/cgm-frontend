@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../models/dashboard_data.dart';
 import '../../widgets/navigation/app_bottom_nav_bar.dart';
 import '../../widgets/dashboard/weekly_glucose_card.dart';
 import '../../widgets/dashboard/glucose_gauge_card.dart';
 import '../../widgets/dashboard/metabolic_score_card.dart';
-import '../../widgets/dashboard/glucose_timeline_card.dart';
+import '../../widgets/dashboard/interactive_glucose_timeline_card.dart';
 import '../../widgets/dashboard/glucose_insights_section.dart';
+import '../../widgets/dashboard/event_timeline_section.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +23,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
   bool _isQuickMenuOpen = false;
+  String? _lastLoadedUserId;
 
   static const _titles = ['Monitor', 'Data', 'Discover', 'Profile'];
 
@@ -35,6 +41,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _onQuickActionTap(QuickActionType action) {
+    _openQuickActionRoute(action);
+  }
+
+  Future<void> _openQuickActionRoute(QuickActionType action, {int? actionEpochMs}) async {
     final route = switch (action) {
       QuickActionType.diet => '/diet',
       QuickActionType.insulin => '/insulin',
@@ -43,20 +53,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
       QuickActionType.fingerBlood => '/finger-blood',
     };
 
+    final target = actionEpochMs == null ? route : '$route?actionEpoch=$actionEpochMs';
+
     setState(() {
       _isQuickMenuOpen = false;
     });
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) {
-        context.push(route);
-      }
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (!mounted) return;
+    await context.push(target);
+    if (!mounted) return;
+    await _loadDashboard(force: true);
+  }
+
+  Future<void> _onTimelineAddQuickAction(int selectedEpochMs) async {
+    final selected = await showModalBottomSheet<QuickActionType>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        Widget tile(QuickActionType type, String label, IconData icon) {
+          return ListTile(
+            leading: Icon(icon, color: const Color(0xFF38404A)),
+            title: Text(label),
+            onTap: () => Navigator.of(context).pop(type),
+          );
+        }
+
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD9DCE1),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Add quick action',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              tile(QuickActionType.diet, 'Diet', Icons.restaurant),
+              tile(QuickActionType.insulin, 'Insulin', Icons.vaccines),
+              tile(QuickActionType.medicine, 'Medicine', Icons.medication),
+              tile(QuickActionType.exercise, 'Exercise', Icons.directions_run),
+              tile(QuickActionType.fingerBlood, 'Finger Blood', Icons.water_drop),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !mounted) return;
+    await _openQuickActionRoute(selected, actionEpochMs: selectedEpochMs);
+  }
+
+  String _resolveUserId() {
+    final userId = context.read<AuthProvider>().user?.id;
+    return (userId != null && userId.isNotEmpty) ? userId : 'guest-dashboard';
+  }
+
+  Future<void> _loadDashboard({bool force = false}) async {
+    final userId = _resolveUserId();
+    if (!force && _lastLoadedUserId == userId) {
+      return;
+    }
+
+    _lastLoadedUserId = userId;
+    await context.read<DashboardProvider>().loadDashboard(userId);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadDashboard();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final dashboardProvider = context.watch<DashboardProvider>();
+    final dashboard = dashboardProvider.dashboardData;
+    final isLoading = dashboardProvider.isLoading;
+    final error = dashboardProvider.error;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F3F4),
@@ -80,81 +171,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
           GestureDetector(
             onTap: _isQuickMenuOpen ? _onCenterTap : null,
             child: SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              top: true,
+              child: RefreshIndicator(
+                onRefresh: () => _loadDashboard(force: true),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // const _SectionHeader(title: 'Dashboard'),
                 // const SizedBox(height: 12),
                 // _OverviewCard(tabTitle: _titles[_currentIndex]),
                 const SizedBox(height: 20),
-                if (_currentIndex == 0) ...[
-                  WeeklyGlucoseCard(
-                    weeklyData: [
-                      WeeklyGlucoseData(day: 'W', value: 94),
-                      WeeklyGlucoseData(day: 'T', value: 79),
-                      WeeklyGlucoseData(day: 'F', value: 81),
-                      WeeklyGlucoseData(day: 'S', value: 90),
-                      WeeklyGlucoseData(day: 'S', value: null),
-                      WeeklyGlucoseData(day: 'M', value: null),
-                      WeeklyGlucoseData(day: 'T', value: null),
-                    ],
-                    onDaySelected: (index) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Day ${index + 1} selected'),
-                          duration: const Duration(milliseconds: 500),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  GlucoseGaugeCard(
-                    glucoseValue: 102,
-                    unit: 'mg/dL',
-                    isControlled: true,
-                  ),
-                  const SizedBox(height: 24),
-                  MetabolicScoreCard(
-                    score: 86,
-                    timestamp: '74 mg/dL · 5:22 pm',
-                    isImproved: true,
-                    label: 'Metabolic Score',
-                  ),
-                  const SizedBox(height: 24),
-                  const GlucoseTimelineCard(),
-                  const SizedBox(height: 16),
-                  const GlucoseInsightsSection(),
-                  const SizedBox(height: 40),
-                ],
-                const _SectionHeader(title: 'Upcoming Modules'),
-                const SizedBox(height: 10),
-                const _ModuleTile(label: 'Glucose timeline card'),
-                const _ModuleTile(label: 'Health metrics summary'),
-                const _ModuleTile(label: 'Sensor connection status'),
-                const _ModuleTile(label: 'Medication and meal logs'),
-                const SizedBox(height: 18),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFE3E3E3)),
-                  ),
-                  child: const Text(
-                    'This is your base dashboard shell. We can now add each feature one by one.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF5B5F66),
-                      height: 1.35,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                if (_currentIndex == 0) ..._buildMonitorContent(
+                  context,
+                  dashboard: dashboard,
+                  isLoading: isLoading,
+                  error: error,
+                  onTimelineAddQuickAction: _onTimelineAddQuickAction,
                 ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -195,22 +233,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF111111),
-      ),
-    );
+List<Widget> _buildMonitorContent(
+  BuildContext context, {
+  required DashboardData? dashboard,
+  required bool isLoading,
+  required String? error,
+  required ValueChanged<int> onTimelineAddQuickAction,
+}) {
+  if (isLoading && dashboard == null) {
+    return const [
+      SizedBox(height: 80),
+      Center(child: CircularProgressIndicator()),
+      SizedBox(height: 80),
+    ];
   }
+
+  if (error != null && dashboard == null) {
+    return [
+      const SizedBox(height: 18),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE3E3E3)),
+          ),
+          child: Text(
+            error,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF5B5F66),
+              height: 1.35,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 40),
+    ];
+  }
+
+  final weeklyPoints = (dashboard?.weekly.points ?? const <WeeklyPoint>[])
+      .map((item) => WeeklyGlucoseData(day: item.day, value: item.value))
+      .toList();
+
+  return [
+    WeeklyGlucoseCard(
+      weeklyData: weeklyPoints,
+      initialSelectedIndex: dashboard?.weekly.selectedIndex ?? 0,
+      onDaySelected: (index) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Day ${index + 1} selected'),
+            duration: const Duration(milliseconds: 500),
+          ),
+        );
+      },
+    ),
+    const SizedBox(height: 24),
+    GlucoseGaugeCard(
+      glucoseValue: dashboard?.gauge.glucoseValue ?? 102,
+      unit: dashboard?.gauge.unit ?? 'mg/dL',
+      isControlled: dashboard?.gauge.isControlled ?? true,
+    ),
+    const SizedBox(height: 24),
+    MetabolicScoreCard(
+      score: dashboard?.metabolicScore.score ?? 86,
+      timestamp: dashboard?.metabolicScore.timestamp ?? '74 mg/dL · 5:22 pm',
+      isImproved: dashboard?.metabolicScore.isImproved ?? true,
+      label: dashboard?.metabolicScore.label ?? 'Metabolic Score',
+    ),
+    const SizedBox(height: 24),
+    InteractiveGlucoseTimelineCard(
+      points: dashboard?.timeline.points ?? const [],
+      biomarkers: dashboard?.timeline.biomarkers ?? const [],
+      onAddQuickAction: onTimelineAddQuickAction,
+    ),
+    const SizedBox(height: 16),
+    GlucoseInsightsSection(
+      topStats: dashboard?.insights.topStats ?? const [],
+      cards: dashboard?.insights.cards ?? const [],
+    ),
+    const SizedBox(height: 22),
+    DashboardEventTimelineSection(
+      title: dashboard?.eventTimeline.title ?? 'Timeline',
+      items: dashboard?.eventTimeline.items ?? const [],
+    ),
+    const SizedBox(height: 40),
+  ];
 }
 
 class _OverviewCard extends StatelessWidget {
@@ -255,37 +368,3 @@ class _OverviewCard extends StatelessWidget {
   }
 }
 
-class _ModuleTile extends StatelessWidget {
-  const _ModuleTile({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E6E9)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle_outline, color: Color(0xFF9AA1AC), size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF32353A),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

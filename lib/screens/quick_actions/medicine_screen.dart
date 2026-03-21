@@ -8,7 +8,9 @@ import '../../utils/date_time_utils.dart';
 import '../../widgets/common/quick_action_header.dart';
 
 class MedicineScreen extends StatefulWidget {
-  const MedicineScreen({super.key});
+  const MedicineScreen({super.key, this.initialEpochMs});
+
+  final int? initialEpochMs;
 
   @override
   State<MedicineScreen> createState() => _MedicineScreenState();
@@ -27,6 +29,9 @@ class _MedicineScreenState extends State<MedicineScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialEpochMs != null) {
+      _medicineTime = DateTimeUtils.formatEpochMsToDisplay(widget.initialEpochMs!);
+    }
     _medicineNameController.addListener(_onTextChanged);
   }
 

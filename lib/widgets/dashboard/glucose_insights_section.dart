@@ -1,30 +1,36 @@
 import 'package:flutter/material.dart';
 
+import '../../models/dashboard_data.dart';
+
 class GlucoseInsightsSection extends StatelessWidget {
-  const GlucoseInsightsSection({super.key});
+  const GlucoseInsightsSection({
+    super.key,
+    this.topStats = const [],
+    this.cards = const [],
+  });
+
+  final List<InsightTopStat> topStats;
+  final List<InsightCardItem> cards;
 
   @override
   Widget build(BuildContext context) {
-    const cards = [
-      _InsightCardData(title: 'Time above range', value: '45', unit: 'min'),
-      _InsightCardData(title: 'Time in range', value: '45', unit: 'min'),
-      _InsightCardData(title: 'Glucose Excursion', value: '45', unit: 'min'),
-      _InsightCardData(title: 'GMI', value: '45', unit: 'min'),
-      _InsightCardData(title: 'Glucose Oscillation’s', value: '45', unit: 'min'),
-    ];
+    final safeTopStats = topStats.isEmpty ? _defaultTopStats : topStats;
+    final safeCards = cards.isEmpty ? _defaultCards : cards;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
-          const _TopStatsRow(),
-          const SizedBox(height: 14),
-          ...cards.asMap().entries.map(
+          const SizedBox(height: 6),
+          _TopStatsRow(stats: safeTopStats),
+          const SizedBox(height: 18),
+          ...safeCards.asMap().entries.map(
             (entry) => Padding(
-              padding: EdgeInsets.only(bottom: entry.key == cards.length - 1 ? 0 : 12),
+              padding: EdgeInsets.only(bottom: entry.key == safeCards.length - 1 ? 0 : 12),
               child: _InsightCard(data: entry.value),
             ),
           ),
+          const SizedBox(height: 6),
         ],
       ),
     );
@@ -32,45 +38,31 @@ class GlucoseInsightsSection extends StatelessWidget {
 }
 
 class _TopStatsRow extends StatelessWidget {
-  const _TopStatsRow();
+  const _TopStatsRow({required this.stats});
+
+  final List<InsightTopStat> stats;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        Expanded(
-          child: _MiniStat(
-            value: '108',
-            unit: 'mg/dL',
-            label: 'Avg Glucose',
-            valueColor: Color(0xFF111111),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(stats.length, (index) {
+        final item = stats[index];
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: index == 0 ? 0 : 4,
+              right: index == stats.length - 1 ? 0 : 4,
+            ),
+            child: _MiniStat(
+              value: item.value,
+              unit: item.unit,
+              label: item.label,
+              valueColor: item.valueColor,
+            ),
           ),
-        ),
-        Expanded(
-          child: _MiniStat(
-            value: '7',
-            unit: 'mg/dL',
-            label: 'Std. Dev',
-            valueColor: Color(0xFF111111),
-          ),
-        ),
-        Expanded(
-          child: _MiniStat(
-            value: '1h 40m',
-            unit: '',
-            label: 'Spike Time',
-            valueColor: Color(0xFFD92D20),
-          ),
-        ),
-        Expanded(
-          child: _MiniStat(
-            value: '1',
-            unit: '',
-            label: 'Spike',
-            valueColor: Color(0xFFD92D20),
-          ),
-        ),
-      ],
+        );
+      }),
     );
   }
 }
@@ -90,44 +82,62 @@ class _MiniStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 390;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 20,
-                height: 1,
-                fontWeight: FontWeight.w600,
-                color: valueColor,
-              ),
-            ),
-            if (unit.isNotEmpty) ...[
-              const SizedBox(width: 4),
-              Padding(
-                padding: EdgeInsets.only(bottom: 1),
-                child: Text(
-                  unit,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF6B7280),
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: isCompact ? 22 : 24,
+                    height: 1,
+                    fontWeight: FontWeight.w600,
+                    color: valueColor,
                   ),
                 ),
-              ),
-            ],
-          ],
+                if (unit.isNotEmpty) ...[
+                  const SizedBox(width: 3),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 1),
+                    child: Text(
+                      unit,
+                      style: TextStyle(
+                        fontSize: isCompact ? 13 : 14,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF6E737D),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF6B7280),
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: isCompact ? 15 : 16,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF6E737D),
+              ),
+            ),
           ),
         ),
       ],
@@ -135,22 +145,10 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-class _InsightCardData {
-  const _InsightCardData({
-    required this.title,
-    required this.value,
-    required this.unit,
-  });
-
-  final String title;
-  final String value;
-  final String unit;
-}
-
 class _InsightCard extends StatelessWidget {
   const _InsightCard({required this.data});
 
-  final _InsightCardData data;
+  final InsightCardItem data;
 
   @override
   Widget build(BuildContext context) {
@@ -182,9 +180,9 @@ class _InsightCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'OPTIMAL',
-                      style: TextStyle(
+                    Text(
+                      data.status,
+                      style: const TextStyle(
                         fontSize: 12,
                         height: 1,
                         fontWeight: FontWeight.w700,
@@ -245,8 +243,8 @@ class _InsightCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Your glucose levels have been stable today.\nFocus on balanced meals and activity to help your\nbody to balance glucose.',
+          Text(
+            data.summary,
             style: TextStyle(
               fontSize: 13,
               height: 1.35,
@@ -259,6 +257,80 @@ class _InsightCard extends StatelessWidget {
     );
   }
 }
+
+const _defaultTopStats = <InsightTopStat>[
+  InsightTopStat(
+    key: 'avgGlucose',
+    value: '18',
+    unit: 'mg/dL',
+    label: 'Avg Glucose',
+    valueColor: Color(0xFF111111),
+  ),
+  InsightTopStat(
+    key: 'stdDev',
+    value: '17',
+    unit: 'mg/dL',
+    label: 'Std. Dev',
+    valueColor: Color(0xFF111111),
+  ),
+  InsightTopStat(
+    key: 'spikeTime',
+    value: '1h 40m',
+    unit: '',
+    label: 'Spike Time',
+    valueColor: Color(0xFFD92D20),
+  ),
+  InsightTopStat(
+    key: 'spike',
+    value: '1',
+    unit: '',
+    label: 'Spike',
+    valueColor: Color(0xFFD92D20),
+  ),
+];
+
+const _defaultCards = <InsightCardItem>[
+  InsightCardItem(
+    title: 'Time above range',
+    value: '45',
+    unit: 'min',
+    status: 'OPTIMAL',
+    summary:
+        'Your glucose levels have been stable today. Focus on balanced meals and activity to help your body to balance glucose.',
+  ),
+  InsightCardItem(
+    title: 'Time in range',
+    value: '45',
+    unit: 'min',
+    status: 'OPTIMAL',
+    summary:
+        'Your glucose levels have been stable today. Focus on balanced meals and activity to help your body to balance glucose.',
+  ),
+  InsightCardItem(
+    title: 'Glucose Excursion',
+    value: '45',
+    unit: 'min',
+    status: 'OPTIMAL',
+    summary:
+        'Your glucose levels have been stable today. Focus on balanced meals and activity to help your body to balance glucose.',
+  ),
+  InsightCardItem(
+    title: 'GMI',
+    value: '6.4',
+    unit: '%',
+    status: 'OPTIMAL',
+    summary:
+        'Your glucose levels have been stable today. Focus on balanced meals and activity to help your body to balance glucose.',
+  ),
+  InsightCardItem(
+    title: 'Glucose Oscillation’s',
+    value: '45',
+    unit: 'min',
+    status: 'OPTIMAL',
+    summary:
+        'Your glucose levels have been stable today. Focus on balanced meals and activity to help your body to balance glucose.',
+  ),
+];
 
 class _RangeScale extends StatelessWidget {
   const _RangeScale();

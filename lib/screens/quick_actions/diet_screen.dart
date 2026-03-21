@@ -7,7 +7,9 @@ import '../../utils/date_time_utils.dart';
 import '../../widgets/common/quick_action_header.dart';
 
 class DietScreen extends StatefulWidget {
-  const DietScreen({super.key});
+  const DietScreen({super.key, this.initialEpochMs});
+
+  final int? initialEpochMs;
 
   @override
   State<DietScreen> createState() => _DietScreenState();
@@ -27,6 +29,9 @@ class _DietScreenState extends State<DietScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialEpochMs != null) {
+      _dietTime = DateTimeUtils.formatEpochMsToDisplay(widget.initialEpochMs!);
+    }
     _foodNameController.addListener(_onTextChanged);
   }
 

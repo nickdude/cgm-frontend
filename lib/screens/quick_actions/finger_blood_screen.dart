@@ -7,7 +7,9 @@ import '../../utils/date_time_utils.dart';
 import '../../widgets/common/quick_action_header.dart';
 
 class FingerBloodScreen extends StatefulWidget {
-  const FingerBloodScreen({super.key});
+  const FingerBloodScreen({super.key, this.initialEpochMs});
+
+  final int? initialEpochMs;
 
   @override
   State<FingerBloodScreen> createState() => _FingerBloodScreenState();
@@ -17,6 +19,14 @@ class _FingerBloodScreenState extends State<FingerBloodScreen> {
   final _bgmController = TextEditingController();
   String _bloodTime = '08-03 17:28';
   String _bloodStatus = 'Before Dinner';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEpochMs != null) {
+      _bloodTime = DateTimeUtils.formatEpochMsToDisplay(widget.initialEpochMs!);
+    }
+  }
 
   @override
   void dispose() {

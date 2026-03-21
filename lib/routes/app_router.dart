@@ -108,23 +108,38 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/diet',
-      builder: (context, state) => const DietScreen(),
+      builder: (context, state) {
+        final epoch = int.tryParse(state.uri.queryParameters['actionEpoch'] ?? '');
+        return DietScreen(initialEpochMs: epoch);
+      },
     ),
     GoRoute(
       path: '/insulin',
-      builder: (context, state) => const InsulinScreen(),
+      builder: (context, state) {
+        final epoch = int.tryParse(state.uri.queryParameters['actionEpoch'] ?? '');
+        return InsulinScreen(initialEpochMs: epoch);
+      },
     ),
     GoRoute(
       path: '/medicine',
-      builder: (context, state) => const MedicineScreen(),
+      builder: (context, state) {
+        final epoch = int.tryParse(state.uri.queryParameters['actionEpoch'] ?? '');
+        return MedicineScreen(initialEpochMs: epoch);
+      },
     ),
     GoRoute(
       path: '/exercise',
-      builder: (context, state) => const ExerciseScreen(),
+      builder: (context, state) {
+        final epoch = int.tryParse(state.uri.queryParameters['actionEpoch'] ?? '');
+        return ExerciseScreen(initialEpochMs: epoch);
+      },
     ),
     GoRoute(
       path: '/finger-blood',
-      builder: (context, state) => const FingerBloodScreen(),
+      builder: (context, state) {
+        final epoch = int.tryParse(state.uri.queryParameters['actionEpoch'] ?? '');
+        return FingerBloodScreen(initialEpochMs: epoch);
+      },
     ),
   ],
 );

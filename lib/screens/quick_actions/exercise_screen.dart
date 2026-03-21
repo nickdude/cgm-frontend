@@ -8,7 +8,9 @@ import '../../utils/date_time_utils.dart';
 import '../../widgets/common/quick_action_header.dart';
 
 class ExerciseScreen extends StatefulWidget {
-  const ExerciseScreen({super.key});
+  const ExerciseScreen({super.key, this.initialEpochMs});
+
+  final int? initialEpochMs;
 
   @override
   State<ExerciseScreen> createState() => _ExerciseScreenState();
@@ -27,6 +29,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialEpochMs != null) {
+      _exerciseTime = DateTimeUtils.formatEpochMsToDisplay(widget.initialEpochMs!);
+    }
     _exerciseNameController.addListener(_onTextChanged);
   }
 
