@@ -85,6 +85,9 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/discover/discover-1.png
+    - assets/images/discover/discover-2.jpg
+    - assets/images/discover/discover-3.jpg
     - assets/images/welcome/
     - assets/images/signin/
     - assets/images/device-setup/

@@ -12,6 +12,9 @@ import '../../widgets/dashboard/metabolic_score_card.dart';
 import '../../widgets/dashboard/interactive_glucose_timeline_card.dart';
 import '../../widgets/dashboard/glucose_insights_section.dart';
 import '../../widgets/dashboard/event_timeline_section.dart';
+import '../data/data_tab_content.dart';
+import '../discover/discover_tab_content.dart';
+import '../profile/profile_home_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -190,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isLoading: isLoading,
                   error: error,
                   onTimelineAddQuickAction: _onTimelineAddQuickAction,
-                ),
+                ) else if (_currentIndex == 1) const DataTabContent() else if (_currentIndex == 2) const DiscoverTabContent() else if (_currentIndex == 3) const ProfileHomeScreen(),
                     ],
                   ),
                 ),
@@ -231,6 +234,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
+}
+
+List<Widget> _buildPlaceholderTab({
+  required String title,
+  required String subtitle,
+}) {
+  return [
+    const SizedBox(height: 80),
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE3E3E3)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 16,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF111111),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6C717B),
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+    const SizedBox(height: 40),
+  ];
 }
 
 List<Widget> _buildMonitorContent(
